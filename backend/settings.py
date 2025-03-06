@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-jw1=gs^h1zqji4x4g#&#ebq&9n_#6pro+v0-qn#kq$j1)tw4^m
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "mercado-cafetero-backend.onrender.com"
+    '.railway.app', 'localhost'
     ]
 
 
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -119,7 +120,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
