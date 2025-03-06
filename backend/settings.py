@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-jw1=gs^h1zqji4x4g#&#ebq&9n_#6pro+v0-qn#kq$j1)tw4^m
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "*"
+    "mercado-cafetero-backend.onrender.com"
     ]
 
 
