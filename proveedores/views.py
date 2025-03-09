@@ -11,12 +11,12 @@ from .serializers import ProveedorSerializer, CategoriaProveedorSerializer
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
     serializer_class = ProveedorSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Solo usuarios autenticados
+    permission_classes = [permissions.AllowAny]  # Solo usuarios autenticados
 
 class CategoriaProveedorViewSet(viewsets.ModelViewSet):
     queryset = CategoriaProveedor.objects.all()
     serializer_class = CategoriaProveedorSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Solo usuarios autenticados
+    permission_classes = [permissions.AllowAny]  # Solo usuarios autenticados
 
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
