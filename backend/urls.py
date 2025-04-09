@@ -20,6 +20,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('proveedores.urls')),  # 🔹 Se incluye correctamente
-    path("api/login/", ObtainAuthToken.as_view(), name="api_login"),
+    path('api/', include('proveedores.urls')), # Cambia 'proveedores' por el nombre de tu app de proveedores
+    path("api/login/", ObtainAuthToken.as_view(), name="api_login"), # URL para obtener el token de autenticación
+    path('api/', include('inventario.urls')), # Cambia 'inventario' por el nombre de tu app de inventario
+    path('api/', include('productos.urls')),  # Cambia 'productos' por el nombre de tu app de productos
 ]
