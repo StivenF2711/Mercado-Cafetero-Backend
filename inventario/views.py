@@ -1,7 +1,7 @@
 from rest_framework import viewsets
-from .models import EntradaInventario
-from .serializers import EntradaInventarioSerializer
+from .models import Inventario
+from .serializers import InventarioSerializer
 
-class EntradaInventarioViewSet(viewsets.ModelViewSet):
-    queryset = EntradaInventario.objects.all().order_by('-fecha')
-    serializer_class = EntradaInventarioSerializer
+class InventarioViewSet(viewsets.ModelViewSet):
+    queryset = Inventario.objects.all().order_by('-fecha_actualizacion')
+    serializer_class = InventarioSerializer

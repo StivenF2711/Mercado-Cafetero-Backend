@@ -1,9 +1,9 @@
 
 from rest_framework import serializers
-from .models import EntradaInventario
+from .models import Inventario
 
-class EntradaInventarioSerializer(serializers.ModelSerializer):
+class InventarioSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EntradaInventario
+        model = Inventario
         fields = '__all__'
-        read_only_fields = ['fecha']  # Evita que te la pidan al crear
+        read_only_fields = ['fecha_creacion', 'fecha_actualizacion']
