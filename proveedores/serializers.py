@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import Proveedor, CategoriaProveedor
+from .models import Proveedor, Categoria
 
 class CategoriaProveedorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CategoriaProveedor
+        model = Categoria
         fields = '__all__'
 
 class ProveedorSerializer(serializers.ModelSerializer):

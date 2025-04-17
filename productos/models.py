@@ -1,9 +1,10 @@
+# productos/models.py
 from django.db import models
-from proveedores.models import CategoriaProveedor, Proveedor  # Asegúrate de importar bien según tu estructura
+from proveedores.models import Categoria, Proveedor  # Ahora importa 'Categoria' y 'Proveedor' correctamente
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=255)
-    categoria = models.ForeignKey(CategoriaProveedor, on_delete=models.CASCADE, related_name='productos')
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='productos')  # Relación con 'Categoria'
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
     precio_compra = models.DecimalField(max_digits=10, decimal_places=2)
     precio_venta = models.DecimalField(max_digits=10, decimal_places=2)

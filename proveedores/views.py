@@ -5,7 +5,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth.hashers import make_password
-from .models import Proveedor, CategoriaProveedor
+from .models import Proveedor, Categoria
 from .serializers import ProveedorSerializer, CategoriaProveedorSerializer
 
 class ProveedorViewSet(viewsets.ModelViewSet):
@@ -13,8 +13,8 @@ class ProveedorViewSet(viewsets.ModelViewSet):
     serializer_class = ProveedorSerializer
     permission_classes = [permissions.AllowAny]  # Solo usuarios autenticados
 
-class CategoriaProveedorViewSet(viewsets.ModelViewSet):
-    queryset = CategoriaProveedor.objects.all()
+class CategoriaViewSet(viewsets.ModelViewSet):
+    queryset = Categoria.objects.all()
     serializer_class = CategoriaProveedorSerializer
     permission_classes = [permissions.AllowAny]  # Solo usuarios autenticados
 
