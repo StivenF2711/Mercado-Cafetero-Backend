@@ -3,7 +3,7 @@ from .models import Producto
 
 class ProductoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
-    imagen = serializers.ImageField(required=False) # Permite la subida de imágenes, no es requerida
+    imagen = serializers.CharField(source='imagen.url', read_only=True) # Asegúrate de tener esto o similar
 
     class Meta:
         model = Producto
