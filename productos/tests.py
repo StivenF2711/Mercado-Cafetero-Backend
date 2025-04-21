@@ -20,7 +20,6 @@ class ProductoTests(APITestCase):
             'precio_venta': 2.0,
             'stock': 50,
             'unidad_medida': 'litro',
-            'activo': True,
         }
 
     def test_crear_producto(self):
@@ -40,12 +39,12 @@ class ProductoTests(APITestCase):
             stock=20,
             unidad_medida='unidad',
         )
-        
+
         url = f'/api/productos/{producto.id}/'
         updated_data = {'stock': 25}
         response = self.client.patch(url, updated_data, format='json')
         producto.refresh_from_db()
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(producto.stock, 25)
 
@@ -69,9 +68,8 @@ class ProductoTests(APITestCase):
             precio_venta=2.0,
             stock=50,
             unidad_medida='litro',
-            activo=True,
         )
-        
+
         url = '/api/productos/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

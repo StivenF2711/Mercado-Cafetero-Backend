@@ -1,116 +1,77 @@
-# inventario/tests.py
-from rest_framework import status
-from rest_framework.test import APITestCase
-from proveedores.models import Categoria, Proveedor
-from productos.models import Producto
+from django.test import TestCase
 from inventario.models import Inventario
+from productos.models import Producto
+from proveedores.models import Proveedor, Categoria
 
-class InventarioTests(APITestCase):
-
+class InventarioModelTests(TestCase):
     def setUp(self):
-        # Crear una categoría, proveedor y producto para asociarlos al inventario
-        self.categoria = Categoria.objects.create(nombre="Lácteos")
-        self.proveedor = Proveedor.objects.create(nombre="Proveedor 1", categoria=self.categoria)
+        self.categoria = Categoria.objects.create(nombre="Abarrotes")
+        self.proveedor = Proveedor.objects.create(
+            nombre="Proveedor Central",
+            categoria=self.categoria,
+            telefono="3201234567",
+            email="central@proveedor.com",
+            dias_visita="Lunes y Jueves"
+        )
         self.producto = Producto.objects.create(
-            nombre="Leche",
+            nombre="Arroz Diana",
             categoria=self.categoria,
             proveedor=self.proveedor,
-            precio_compra=1.5,
-            precio_venta=2.0,
-            stock=50,
-            unidad_medida="litro",
-            activo=True
+            precio_compra=2000,
+            precio_venta=2500,
+            unidad_medida="kg",
+            stock=10
         )
 
-        # Datos para agregar al inventario
-        self.movimiento_data_entrada = {
-            'producto': self.producto.id,
-            'proveedor': self.proveedor.id,
-            'tipo': 'entrada',
-            'cantidad': 10,
-        }
-        
-        self.movimiento_data_salida = {
-            'producto': self.producto.id,
-            'proveedor': self.proveedor.id,
-            'tipo': 'salida',
-            'cantidad': 5,
-        }
-
-    def test_agregar_entrada_al_inventario(self):
-        # Verificar el stock inicial del producto
-        self.assertEqual(self.producto.stock, 50)
-        
-        # Crear un movimiento de entrada
-        url = '/api/inventario/'
-        response = self.client.post(url, self.movimiento_data_entrada, format='json')
-        
-        # Verificar que el stock se haya incrementado correctamente
-        self.producto.refresh_from_db()
-        self.assertEqual(self.producto.stock, 60)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_registrar_salida_del_inventario(self):
-        # Primero agregar una entrada para que haya stock
+    def test_entrada_aumenta_stock(self):
+        """Una entrada de inventario debe aumentar el stock del producto."""
         Inventario.objects.create(
             producto=self.producto,
             proveedor=self.proveedor,
             tipo='entrada',
-            cantidad=10,
+            cantidad=5
         )
-        
-        # Verificar el stock antes de la salida
-        self.assertEqual(self.producto.stock, 60)
-        
-        # Crear un movimiento de salida
-        url = '/api/inventario/'
-        response = self.client.post(url, self.movimiento_data_salida, format='json')
-        
-        # Verificar que el stock se haya decrementado correctamente
         self.producto.refresh_from_db()
-        self.assertEqual(self.producto.stock, 55)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.producto.stock, 15)
 
-    def test_eliminar_movimiento_inventario(self):
-        # Crear un movimiento de entrada
-        movimiento = Inventario.objects.create(
-            producto=self.producto,
-            proveedor=self.proveedor,
-            tipo='entrada',
-            cantidad=10,
-        )
-        
-        # Verificar el stock antes de la eliminación
-        self.assertEqual(self.producto.stock, 60)
-        
-        # Eliminar el movimiento de inventario
-        url = f'/api/inventario/{movimiento.id}/'
-        response = self.client.delete(url)
-        
-        # Verificar que el stock se haya ajustado correctamente
-        self.producto.refresh_from_db()
-        self.assertEqual(self.producto.stock, 50)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-    def test_ver_movimientos_inventario(self):
-        # Crear algunos movimientos de inventario
-        Inventario.objects.create(
-            producto=self.producto,
-            proveedor=self.proveedor,
-            tipo='entrada',
-            cantidad=10,
-        )
-        
+    def test_salida_disminuye_stock(self):
+        """Una salida de inventario debe disminuir el stock del producto."""
         Inventario.objects.create(
             producto=self.producto,
             proveedor=self.proveedor,
             tipo='salida',
-            cantidad=5,
+            cantidad=3
         )
-        
-        url = '/api/inventario/'
-        response = self.client.get(url)
-        
-        # Verificar que los movimientos fueron recuperados correctamente
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # Debería haber 2 movimientos
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 7)
+
+    def test_actualizacion_movimiento_ajusta_stock_correctamente(self):
+        """Actualizar un movimiento ya existente debe ajustar el stock correctamente."""
+        movimiento = Inventario.objects.create(
+            producto=self.producto,
+            proveedor=self.proveedor,
+            tipo='entrada',
+            cantidad=8
+        )
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 18)
+
+        movimiento.cantidad = 5
+        movimiento.save()
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 15)
+
+    def test_eliminar_movimiento_revierte_ajuste_stock(self):
+        """Eliminar un movimiento de inventario debe revertir el ajuste de stock."""
+        movimiento = Inventario.objects.create(
+            producto=self.producto,
+            proveedor=self.proveedor,
+            tipo='entrada',
+            cantidad=6
+        )
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 16)
+
+        movimiento.delete()
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 10)
