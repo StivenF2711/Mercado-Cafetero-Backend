@@ -166,8 +166,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 CORS_ALLOW_CREDENTIALS = True
+=======
+>>>>>>> parent of 658872d (update something x2)
 =======
 >>>>>>> parent of 658872d (update something x2)
 =======
