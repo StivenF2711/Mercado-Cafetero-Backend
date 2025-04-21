@@ -163,5 +163,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+<<<<<<< HEAD
 
 CORS_ALLOW_CREDENTIALS = True
+=======
+>>>>>>> parent of 658872d (update something x2)
