@@ -20,15 +20,25 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf import settings
 from django.conf.urls.static import static
 
+from rest_framework.routers import DefaultRouter
+from proveedores.views import ProveedorViewSet, CategoriaViewSet
+from productos.views import ProductoViewSet
+from inventario.views import InventarioViewSet
+from usuarios.views import UsuarioViewSet
+from pedidos.views import PedidoViewSet
+
+router = DefaultRouter()
+router.register(r'proveedores', ProveedorViewSet)
+router.register(r'categorias', CategoriaViewSet)
+router.register(r'productos', ProductoViewSet)
+router.register(r'inventario', InventarioViewSet)
+router.register(r'usuarios', UsuarioViewSet)
+router.register(r'pedidos', PedidoViewSet)  
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("api/login/", obtain_auth_token, name="api_login"),  # Autenticación
-
-
-    # Aquí organizamos por apps específicas
-    path('api/', include('proveedores.urls')),
-    path('api/', include('productos.urls')),
-    path('api/', include('inventario.urls')),
+    path("api/login/", obtain_auth_token, name="api_login"),
+    path('api/', include(router.urls)),
 ]
 
 if settings.DEBUG:

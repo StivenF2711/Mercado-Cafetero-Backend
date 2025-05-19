@@ -1,6 +1,5 @@
 from django.db import models
 from productos.models import Producto
-from proveedores.models import Proveedor
 
 class Inventario(models.Model):
     TIPO_MOVIMIENTO = (
@@ -9,7 +8,6 @@ class Inventario(models.Model):
     )
 
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
-    proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True, related_name='movimientos')
     tipo = models.CharField(max_length=10, choices=TIPO_MOVIMIENTO, default='entrada')
     cantidad = models.PositiveIntegerField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
