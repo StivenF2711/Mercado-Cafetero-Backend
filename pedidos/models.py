@@ -1,4 +1,5 @@
 from django.db import models
+from productos import serializers
 from proveedores.models import Proveedor
 from productos.models import Producto
 
@@ -8,6 +9,7 @@ class Pedido(models.Model):
         ('recibido', 'Recibido'),
         ('incompleto', 'Incompleto'),
         ('cancelado', 'Cancelado'),
+        ('en proceso', 'En Proceso'),
     ]
 
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='pedidos')
@@ -29,3 +31,19 @@ class DetallePedido(models.Model):
 
     def __str__(self):
         return f"{self.producto.nombre} ({self.cantidad_pedida} unid.) - Pedido #{self.pedido.id}"
+
+def create(self, validated_data):
+    detalles_data = validated_data.pop('detalles')
+    proveedor = validated_data['proveedor']
+
+    for detalle in detalles_data:
+        producto = detalle['producto']
+        if producto.proveedor != proveedor:
+            raise serializers.ValidationError(
+                f"El producto '{producto.nombre}' no pertenece al proveedor '{proveedor.nombre}'."
+            )
+
+    pedido = Pedido.objects.create(**validated_data)
+    for detalle in detalles_data:
+        DetallePedido.objects.create(pedido=pedido, **detalle)
+    return pedido
