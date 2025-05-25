@@ -26,6 +26,7 @@ from productos.views import ProductoViewSet
 from inventario.views import InventarioViewSet
 from usuarios.views import UsuarioViewSet
 from pedidos.views import PedidoViewSet
+from ventas.views import VentaViewSet
 
 router = DefaultRouter()
 router.register(r'proveedores', ProveedorViewSet)
@@ -34,6 +35,7 @@ router.register(r'productos', ProductoViewSet)
 router.register(r'inventario', InventarioViewSet)
 router.register(r'usuarios', UsuarioViewSet)
 router.register(r'pedidos', PedidoViewSet)  
+router.register(r'ventas', VentaViewSet)  
 
 urlpatterns = [
     path('admin/', admin.site.urls),
