@@ -41,7 +41,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://mercadocafetero.up.railway.app",
+    "https://mercado-cafetero-frontend-production.up.railway.app",
     "http://localhost:5173",
 
 ]
