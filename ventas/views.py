@@ -1,67 +1,94 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from .models import Venta
 from .serializers import VentaSerializer
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 import mercadopago
+from inventario.models import Inventario
+from productos.models import Producto
+from ventas.models import Venta, DetalleVenta  # Ajusta si lo tienes en otra app
+from datetime import datetime
 
 class VentaViewSet(viewsets.ModelViewSet):
     queryset = Venta.objects.all()
     serializer_class = VentaSerializer
     permission_classes = [AllowAny]
 
-    def create(self, request, *args, **kwargs):
-        # Procesar la venta normalmente
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        venta = serializer.save()
-
-        # Si el método de pago es Mercado Pago, crear la preferencia
-        if venta.metodo_pago == "mercadopago":
-            sdk = mercadopago.SDK("TEST-8609422720499282-052501-36f788859347967d7a684ced096b79a2-2458297528")
-
-            items = []
-            for detalle in venta.detalles.all():
-                items.append({
-                    "title": detalle.producto.nombre,
-                    "quantity": detalle.cantidad,
-                    "unit_price": float(detalle.precio_unitario),
+    @action(detail=False, methods=["post"], url_path="crearpreferencia")
+    def crear_preferencia(self, request):
+        sdk = mercadopago.SDK("APP_USR-3350272912119402-052516-fd717a318adaae1d10fe6b3a59a3f431-2456479427")
+    
+        try:
+            data = request.data
+            detalles = data.get("detalles", [])
+            if not detalles:
+                return Response({"error": "No se proporcionaron productos para la venta."}, status=400)
+    
+            # Crear preferencia en MercadoPago (con todos los productos)
+            items_mp = []
+            for item in detalles:
+                producto_id = item.get("producto")
+                producto = Producto.objects.get(id=producto_id)
+                cantidad = int(item.get("cantidad", 1))
+                precio_unitario = float(item.get("precio_unitario", item.get("precio_venta", 0.0)))
+    
+                items_mp.append({
+                    "id": str(producto.id),
+                    "title": producto.nombre,
+                    "quantity": cantidad,
+                    "currency_id": "COP",
+                    "unit_price": precio_unitario,
                 })
-
+    
             preference_data = {
-                "items": items,
-                "back_urls": {
-                    "success": "http://localhost:5173/pago-exitoso",
-                    "failure": "http://localhost:5173/pago-fallido",
-                    "pending": "http://localhost:5173/pago-pendiente"
+                "items": items_mp,
+                "payer": {
+                    "email": "test_user_123456@testuser.com"
                 },
-                "auto_return": "approved"
+                "back_urls": {
+                    "success": "https://mercado-cafetero-frontend-production.up.railway.app/pago-exitoso",
+                    "failure": "https://mercado-cafetero-frontend-production.up.railway.app/pago-fallido",
+                    "pending": "https://mercado-cafetero-frontend-production.up.railway.app/pago-pendiente"
+                },
+                "auto_return": "approved",
             }
+    
+            preference_response = sdk.preference().create(preference_data)
+    
+            # 💾 Crear la venta localmente (puedes mover esto a un webhook si prefieres después del pago)
+            venta = Venta.objects.create(
+             
+                id_cliente=None,  # O puedes usar request.user.id o un email si tienes auth
+                total=sum(item["quantity"] * item["unit_price"] for item in items_mp),
+            
 
-            try:
-                preference_response = sdk.preference().create(preference_data)
-                preference = preference_response.get("response", {})
-                print("Preferencia creada:", preference_response)
+            )
+    
+            for item in detalles:
+                producto = Producto.objects.get(id=item["producto"])
+                cantidad = int(item["cantidad"])
+                precio_unitario = float(item["precio_unitario"])
 
-                if "id" in preference:
-                    venta.preferencia_id = preference["id"]
-                    venta.save()
-                else:
-                    return Response(
-                        {"error": "No se pudo crear la preferencia de pago."},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    )
-
-                data = serializer.data
-                data["init_point"] = preference.get("init_point")
-                return Response(data, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                print("Error al crear preferencia de pago:", e)
-                return Response(
-                    {"error": "Error interno al comunicarse con Mercado Pago."},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                # Crear detalle de venta
+                movimiento = DetalleVenta( 
+                    venta=venta,
+                    producto=producto,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
                 )
 
-        # Si no es MercadoPago, simplemente devolver la venta registrada
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                # Crear instancia de Inventario
+                movimiento = Inventario(
+                    producto=producto,
+                    tipo='venta',
+                    cantidad=cantidad,
+                    observaciones=f"Venta registrada (ID venta: {venta.id})"
+                )
+                # Llamar al método save explícitamente
+                movimiento.save()
+    
+            return Response(preference_response["response"], status=status.HTTP_201_CREATED)
+    
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

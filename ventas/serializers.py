@@ -18,21 +18,26 @@ class VentaSerializer(serializers.ModelSerializer):
         fields = ['id', 'id_cliente', 'fecha', 'total', 'metodo_pago', 'estado', 'observaciones', 'detalles']
         read_only_fields = ['fecha', 'estado', 'total']
 
+    def validate(self, data):
+        usuario_actual = self.context['request'].user.username  # o el identificador correcto
+        id_cliente = data.get('id_cliente')
+
+        if id_cliente == usuario_actual:
+            raise serializers.ValidationError("No puedes pagarte a ti mismo.")
+
+        return data
+
     def create(self, validated_data):
         detalles_data = validated_data.pop('detalles')
-        # No uses total de validated_data, lo calculamos aquí
         total = 0
 
-        # Calculamos total sumando subtotal de cada detalle
         for detalle in detalles_data:
             cantidad = detalle['cantidad']
             precio_unitario = detalle['precio_unitario']
             total += cantidad * precio_unitario
 
-        # Creamos la venta con el total calculado
         venta = Venta.objects.create(total=total, **validated_data)
 
-        # Creamos los detalles y los asociamos a la venta
         for detalle_data in detalles_data:
             DetalleVenta.objects.create(venta=venta, **detalle_data)
 

@@ -11,6 +11,7 @@ class Inventario(models.Model):
         ('vencimiento', 'Salida por vencimiento'),
         ('daño', 'Salida por daño'),              
         ('pérdida', 'Salida por pérdida'),        
+        ('venta', 'Salida por venta'),  # ✅ Nuevo tipo agregado
     )
 
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
@@ -42,7 +43,7 @@ class Inventario(models.Model):
         for movimiento in movimientos:
             if movimiento.tipo == 'entrada':
                 stock += movimiento.cantidad
-            elif movimiento.tipo in ['salida', 'vencimiento', 'daño', 'pérdida']:
+            elif movimiento.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta']:
                 stock -= movimiento.cantidad
         return stock
 
@@ -55,7 +56,7 @@ class Inventario(models.Model):
             if self.precio_venta < self.precio_compra:
                 raise ValidationError("El precio de venta no puede ser menor al precio de compra.")
 
-        if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida'] and not self.pk:
+        if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta'] and not self.pk:
             stock_actual = self.obtener_stock_actual(self.producto)
             if stock_actual - self.cantidad < 0:
                 raise ValidationError("La salida dejaría el stock en negativo.")
@@ -71,7 +72,6 @@ class Inventario(models.Model):
             self.producto.save()
             return super().save(*args, **kwargs)
 
-        # Movimiento de stock normal
         if self.pk:
             movimiento_anterior = Inventario.objects.get(pk=self.pk)
             ajuste = self.cantidad if self.tipo == 'entrada' else -self.cantidad
@@ -83,7 +83,7 @@ class Inventario(models.Model):
         stock_actual = self.obtener_stock_actual(self.producto)
         nuevo_stock = stock_actual + diferencia
 
-        if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida'] and nuevo_stock < 0:
+        if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta'] and nuevo_stock < 0:
             raise ValidationError("Esta modificación dejaría el stock en negativo.")
 
         super().save(*args, **kwargs)
@@ -118,7 +118,7 @@ class Inventario(models.Model):
             ajuste = -self.cantidad if self.tipo == 'entrada' else self.cantidad
             stock_actual = self.obtener_stock_actual(self.producto)
             nuevo_stock = stock_actual + ajuste
-            if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida'] and nuevo_stock < 0:
+            if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta'] and nuevo_stock < 0:
                 raise ValidationError("Eliminar esta salida dejaría el stock en negativo.")
 
         super().delete(*args, **kwargs)
