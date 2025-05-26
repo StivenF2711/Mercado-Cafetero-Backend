@@ -16,7 +16,7 @@ class VentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venta
         fields = ['id', 'id_cliente', 'fecha', 'total', 'metodo_pago', 'estado', 'observaciones', 'detalles']
-        read_only_fields = ['fecha', 'estado', 'total']
+        read_only_fields = ['fecha', 'total']
 
     def validate(self, data):
         usuario_actual = self.context['request'].user.username  # o el identificador correcto
