@@ -15,7 +15,7 @@ class VentaViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="crearpreferencia")
     def crear_preferencia(self, request):
-        sdk = mercadopago.SDK("APP_USR-3350272912119402-052516-fd717a318adaae1d10fe6b3a59a3f431-2456479427")
+        sdk = mercadopago.SDK("APP_USR-4454756877791928-052516-f3436c0bd71846cc2ff7d72336ee8680-2460571380")
         
         try:
             data = request.data
