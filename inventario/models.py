@@ -9,9 +9,10 @@ class Inventario(models.Model):
         ('salida', 'Salida'),
         ('ajuste', 'Ajuste de precios'),
         ('vencimiento', 'Salida por vencimiento'),
-        ('daño', 'Salida por daño'),              
-        ('pérdida', 'Salida por pérdida'),        
-        ('venta', 'Salida por venta'),  # ✅ Nuevo tipo agregado
+        ('daño', 'Salida por daño'),
+        ('pérdida', 'Salida por pérdida'),
+        ('venta', 'Salida por venta'),
+        ('devolución', 'Entrada por devolución'),  # ✅ Nuevo tipo agregado
     )
 
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
@@ -41,7 +42,7 @@ class Inventario(models.Model):
         movimientos = Inventario.objects.filter(producto=producto).exclude(tipo='ajuste')
         stock = 0
         for movimiento in movimientos:
-            if movimiento.tipo == 'entrada':
+            if movimiento.tipo in ['entrada', 'devolución']:
                 stock += movimiento.cantidad
             elif movimiento.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta']:
                 stock -= movimiento.cantidad
@@ -74,11 +75,11 @@ class Inventario(models.Model):
 
         if self.pk:
             movimiento_anterior = Inventario.objects.get(pk=self.pk)
-            ajuste = self.cantidad if self.tipo == 'entrada' else -self.cantidad
-            ajuste_anterior = movimiento_anterior.cantidad if movimiento_anterior.tipo == 'entrada' else -movimiento_anterior.cantidad
-            diferencia = ajuste - ajuste_anterior
+            ajuste_anterior = movimiento_anterior.cantidad if movimiento_anterior.tipo in ['entrada', 'devolución'] else -movimiento_anterior.cantidad
+            ajuste_nuevo = self.cantidad if self.tipo in ['entrada', 'devolución'] else -self.cantidad
+            diferencia = ajuste_nuevo - ajuste_anterior
         else:
-            diferencia = self.cantidad if self.tipo == 'entrada' else -self.cantidad
+            diferencia = self.cantidad if self.tipo in ['entrada', 'devolución'] else -self.cantidad
 
         stock_actual = self.obtener_stock_actual(self.producto)
         nuevo_stock = stock_actual + diferencia
@@ -115,7 +116,7 @@ class Inventario(models.Model):
 
     def delete(self, *args, **kwargs):
         if self.tipo != 'ajuste':
-            ajuste = -self.cantidad if self.tipo == 'entrada' else self.cantidad
+            ajuste = -self.cantidad if self.tipo in ['entrada', 'devolución'] else self.cantidad
             stock_actual = self.obtener_stock_actual(self.producto)
             nuevo_stock = stock_actual + ajuste
             if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta'] and nuevo_stock < 0:

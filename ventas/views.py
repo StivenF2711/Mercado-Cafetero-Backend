@@ -92,3 +92,15 @@ class VentaViewSet(viewsets.ModelViewSet):
     
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=True, methods=['patch'])
+    def devolver(self, request, pk=None):
+        venta = self.get_object()
+        if venta.estado == 'devuelta':
+            return Response({"detail": "Venta ya fue devuelta"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Lógica para hacer la devolución de inventario aquí o en frontend
+
+        venta.estado = 'devuelta'
+        venta.save()
+        return Response({"detail": "Venta marcada como devuelta"})
