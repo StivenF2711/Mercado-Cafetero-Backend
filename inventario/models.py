@@ -5,18 +5,17 @@ from pedidos.models import Pedido, DetallePedido
 
 class Inventario(models.Model):
     TIPO_MOVIMIENTO = (
-    ('entrada', 'Entrada'),
-    ('salida', 'Salida'),
-    ('ajuste', 'Ajuste de precios'),
-    ('vencimiento', 'Salida por vencimiento'),
-    ('daño', 'Salida por daño'),
-    ('pérdida', 'Salida por pérdida'),
-    ('venta', 'Salida por venta'),
-    ('devolución', 'Entrada por devolución'),             # devolución normal
-    ('devolución_daño', 'Entrada por devolución daño'),   # nueva devolución por daño
-    ('devolución_vencimiento', 'Entrada por devolución vencimiento'),  # nueva devolución por vencimiento
+        ('entrada', 'Entrada'),
+        ('salida', 'Salida'),
+        ('ajuste', 'Ajuste de precios'),
+        ('vencimiento', 'Salida por vencimiento'),
+        ('daño', 'Salida por daño'),
+        ('pérdida', 'Salida por pérdida'),
+        ('venta', 'Salida por venta'),
+        ('devolución', 'Entrada por devolución'),             # devolución normal
+        ('devolución_daño', 'Entrada por devolución daño'),   # nueva devolución por daño
+        ('devolución_vencimiento', 'Entrada por devolución vencimiento'),  # nueva devolución por vencimiento
     )
-
 
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
     tipo = models.CharField(max_length=30, choices=TIPO_MOVIMIENTO, default='entrada')
@@ -45,7 +44,7 @@ class Inventario(models.Model):
         movimientos = Inventario.objects.filter(producto=producto).exclude(tipo='ajuste')
         stock = 0
         for movimiento in movimientos:
-            if movimiento.tipo in ['entrada', 'devolución']:
+            if movimiento.tipo in ['entrada', 'devolución', 'devolución_daño', 'devolución_vencimiento']:
                 stock += movimiento.cantidad
             elif movimiento.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta']:
                 stock -= movimiento.cantidad
@@ -76,13 +75,43 @@ class Inventario(models.Model):
             self.producto.save()
             return super().save(*args, **kwargs)
 
+        # Si es tipo devolución, simplemente se guarda y se ignoran validaciones de stock negativas
+        if self.tipo in ['devolución', 'devolución_daño', 'devolución_vencimiento']:
+            super().save(*args, **kwargs)
+            # Luego revisamos el stock para posibles pedidos automáticos
+            stock_actual = self.obtener_stock_actual(self.producto)
+            if stock_actual < 10:
+                proveedor = self.producto.proveedor  # Asume que existe
+                if proveedor is not None:
+                    pedidos_pendientes = Pedido.objects.filter(proveedor=proveedor, estado='pendiente')
+                    pedido_existente = None
+                    for pedido in pedidos_pendientes:
+                        if pedido.detalles.filter(producto=self.producto).exists():
+                            pedido_existente = pedido
+                            break
+                    if not pedido_existente:
+                        pedido = Pedido.objects.create(
+                            proveedor=proveedor,
+                            estado='pendiente',
+                            observaciones='Generado automáticamente por bajo stock',
+                        )
+                        DetallePedido.objects.create(
+                            pedido=pedido,
+                            producto=self.producto,
+                            cantidad_pedida=20,
+                            cantidad_recibida=0,
+                        )
+            return
+
+        # Para otros tipos (salida, venta, daño, etc.) hacemos la lógica usual
+
         if self.pk:
             movimiento_anterior = Inventario.objects.get(pk=self.pk)
-            ajuste_anterior = movimiento_anterior.cantidad if movimiento_anterior.tipo in ['entrada', 'devolución'] else -movimiento_anterior.cantidad
-            ajuste_nuevo = self.cantidad if self.tipo in ['entrada', 'devolución'] else -self.cantidad
+            ajuste_anterior = movimiento_anterior.cantidad if movimiento_anterior.tipo in ['entrada', 'devolución', 'devolución_daño', 'devolución_vencimiento'] else -movimiento_anterior.cantidad
+            ajuste_nuevo = self.cantidad if self.tipo in ['entrada', 'devolución', 'devolución_daño', 'devolución_vencimiento'] else -self.cantidad
             diferencia = ajuste_nuevo - ajuste_anterior
         else:
-            diferencia = self.cantidad if self.tipo in ['entrada', 'devolución'] else -self.cantidad
+            diferencia = self.cantidad if self.tipo in ['entrada', 'devolución', 'devolución_daño', 'devolución_vencimiento'] else -self.cantidad
 
         stock_actual = self.obtener_stock_actual(self.producto)
         nuevo_stock = stock_actual + diferencia
@@ -103,7 +132,6 @@ class Inventario(models.Model):
                     if pedido.detalles.filter(producto=self.producto).exists():
                         pedido_existente = pedido
                         break
-
                 if not pedido_existente:
                     pedido = Pedido.objects.create(
                         proveedor=proveedor,
@@ -119,7 +147,7 @@ class Inventario(models.Model):
 
     def delete(self, *args, **kwargs):
         if self.tipo != 'ajuste':
-            ajuste = -self.cantidad if self.tipo in ['entrada', 'devolución'] else self.cantidad
+            ajuste = -self.cantidad if self.tipo in ['entrada', 'devolución', 'devolución_daño', 'devolución_vencimiento'] else self.cantidad
             stock_actual = self.obtener_stock_actual(self.producto)
             nuevo_stock = stock_actual + ajuste
             if self.tipo in ['salida', 'vencimiento', 'daño', 'pérdida', 'venta'] and nuevo_stock < 0:
