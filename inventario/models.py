@@ -5,18 +5,21 @@ from pedidos.models import Pedido, DetallePedido
 
 class Inventario(models.Model):
     TIPO_MOVIMIENTO = (
-        ('entrada', 'Entrada'),
-        ('salida', 'Salida'),
-        ('ajuste', 'Ajuste de precios'),
-        ('vencimiento', 'Salida por vencimiento'),
-        ('daño', 'Salida por daño'),
-        ('pérdida', 'Salida por pérdida'),
-        ('venta', 'Salida por venta'),
-        ('devolución', 'Entrada por devolución'),  # ✅ Nuevo tipo agregado
+    ('entrada', 'Entrada'),
+    ('salida', 'Salida'),
+    ('ajuste', 'Ajuste de precios'),
+    ('vencimiento', 'Salida por vencimiento'),
+    ('daño', 'Salida por daño'),
+    ('pérdida', 'Salida por pérdida'),
+    ('venta', 'Salida por venta'),
+    ('devolución', 'Entrada por devolución'),             # devolución normal
+    ('devolución_daño', 'Entrada por devolución daño'),   # nueva devolución por daño
+    ('devolución_vencimiento', 'Entrada por devolución vencimiento'),  # nueva devolución por vencimiento
     )
 
+
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
-    tipo = models.CharField(max_length=15, choices=TIPO_MOVIMIENTO, default='entrada')
+    tipo = models.CharField(max_length=30, choices=TIPO_MOVIMIENTO, default='entrada')
     cantidad = models.PositiveIntegerField(default=0)
     precio_compra = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     precio_venta = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
